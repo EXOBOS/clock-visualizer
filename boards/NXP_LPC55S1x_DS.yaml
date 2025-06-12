@@ -1,0 +1,397 @@
+# yaml-language-server: $schema=./board.schema.json
+name: LPC55S51x_DS
+vendor: NXP
+defines:
+  - &clock_enable  # these are predefined keywords
+      0: false
+      1: true
+  - &SYSCON
+    0x50000000
+  - &CLOCk_CTRL
+    !add [*SYSCON, 0xA18]
+  - &MAINCLKSELA
+    !add [*SYSCON, 0x280]
+  - &PLL0CTRL
+    !add [*SYSCON, 0x580]
+  - &PLL0CLKSEL
+    !add [*SYSCON, 0x290]
+  - &PLL0CLKDIV
+    !add [*SYSCON, 0x3C4]
+  - &PLL1CTRL
+    !add [*SYSCON, 0x560]
+  - &MAINCLKSELB
+    !add [*SYSCON, 0x284]
+  - &AHBCLKDIV
+    !add [*SYSCON, 0x380]
+  - &ADCCLKSEL
+    !add [*SYSCON, 0x2A4]
+  - &ADCCLKDIV
+    !add [*SYSCON, 0x394]
+  - &USB0CLKSEL
+    !add [*SYSCON, 0x2A8]
+  - &USB0CLKDIV
+    !add [*SYSCON, 0x398]
+  - &MCLKCLKSEL
+    !add [*SYSCON, 0x2E0]
+  - &MCLKDIV
+    !add [*SYSCON, 0x3AC]
+  - &FROHFDIV
+    !add [*SYSCON, 0x388]
+  - &WDTCLKDIV
+    !add [*SYSCON, 0x38C]
+  - &CANCLKDIV
+    !add [*SYSCON, 0x30C]
+  - &CANCLKSEL
+    !add [*SYSCON, 0x2A0]
+
+  - &FCCLKSEL0
+    !add [*SYSCON, 0x2B0]
+  - &FCCLKSEL1
+    !add [*SYSCON, 0x2B4]
+  - &FCCLKSEL2
+    !add [*SYSCON, 0x2B8]
+  - &FCCLKSEL3
+    !add [*SYSCON, 0x2BC]
+  - &FCCLKSEL4
+    !add [*SYSCON, 0x2C0]
+  - &FCCLKSEL5
+    !add [*SYSCON, 0x2C4]
+  - &FCCLKSEL6
+    !add [*SYSCON, 0x2C8]
+  - &FCCLKSEL7
+    !add [*SYSCON, 0x2CC]
+
+  - &FLEXFRG0CTRL
+    !add [*SYSCON, 0x320]
+  - &FLEXFRG1CTRL
+    !add [*SYSCON, 0x324]
+  - &FLEXFRG2CTRL
+    !add [*SYSCON, 0x328]
+  - &FLEXFRG3CTRL
+    !add [*SYSCON, 0x32C]
+  - &FLEXFRG4CTRL
+    !add [*SYSCON, 0x330]
+  - &FLEXFRG5CTRL
+    !add [*SYSCON, 0x334]
+  - &FLEXFRG6CTRL
+    !add [*SYSCON, 0x338]
+  - &FLEXFRG7CTRL
+    !add [*SYSCON, 0x33C]
+
+  - &flexcomm_sel
+      desc: flexcomm clk selector (see name for number)
+      type: mux
+      input:
+        0b000: clk_main
+        0b001: clk_pll0_div
+        0b010: clk_fro_12m
+        0b011: clk_fro_hf_div
+        0b100: clk_fro_1m
+        0b101: clk_mclk_in
+        0b110: clk_32k_osc
+        0b111: clk_none
+
+  - &flexcomm_div
+      desc: flexcomm fractional rate divider
+      type: div
+      r_div: 0
+      r_mult: 0
+      value: !!lambda div, mult -> 1 + mult / (div + 1)
+
+  - &flexcomm_clk
+      desc: flexcomm clock (for number see name)
+      type: clk
+      input: null
+
+clocks:
+  # standard clocks
+  - clk_xta_osc:
+      desc: physical oscillator connected between xtalin & xtalout
+      type: clk
+  - clk_fro_1m:
+      desc: The output of the low power oscillator
+      type: clk
+      is_enabled: [*clock_enable, !addr [*CLOCk_CTRL, [6]]]
+  - clk_fro_12m:
+      desc: 12 MHz divided down from the currently selected on-chip FRO osci
+      type: clk  # as there is no reg / value here, always assumed on
+  - clk_fro_hf:
+      desc: The currently selected FRO high speed output at 96 MHz.
+      type: clk
+  - clk_32k_osc:
+      desc: The 32 kHz output of the RTC oscillator. The 32 kHz clock must be enabled in the RTCOSCCTRL register
+      type: clk
+  - clk_none:
+      desc: A tied-off source that should be selected to save power when the output of the related multiplexer is not used.
+      type: clk
+
+  # plls
+  - clk_pll0:
+      desc: The output of the PLL0
+      type: pll  # pll is a subclass of clock, currently no further use
+      input: mux_pll0_clk
+      is_enabled: [*clock_enable, !addr [*PLL0CTRL, [21]]]
+  - clk_pll1:
+      desc: The output of the PLL1
+      type: clk
+      input: PLL1CLKSEL
+      is_enabled: [*clock_enable, !addr [*PLL1CTRL, [21]]]
+
+  # derived clocks
+  - clk_main:
+      desc: The main clock used by the CPU and AHB bus, and potentially many others.
+      type: clk
+      input: mux_main_clk_b
+  - clk_ahb:
+      desc: Main clock that drives the CPU, AHB bus and memory
+      type: clk
+      input: div_clk_ahb
+  - clk_adc:
+      desc: Clock for the 16 bit ADC system
+      type: clk
+      input: div_adc_clk
+  - clk_usb0:
+      desc: USB0 full speed function block clock
+      type: clk
+      input: div_usb_clk
+  - clk_mclk_in:
+      desc: I²S mclk output
+      type: clk
+      input: div_mclk
+  - clk_fro_hf_div:
+      desc: clock signal clk_fro_hf divided down for flexcomm interfaces
+      type: clk
+      input: div_froh_hf
+  - clk_pll0_div:
+      desc: divided PLL0 clock for flexcomm interfaces
+      type: clk
+      input: div_fc_clk_pll0
+  - clk_in:
+      desc: This is the internal clock that comes from the external oscillator
+      type: clk
+      is_enabled: [*clock_enable, !addr [*CLOCk_CTRL, [5]]]
+      input: clk_xta_osc
+  - clk_xo_to_clk_adc:
+      desc: physical XO32MHz clock for the ADC gate
+      type: clk
+      input: clk_xta_osc
+  - clk_wdt:
+      desc: clock for the WDT
+      type: clk
+      input: div_wwdt_clk
+  - clk_can:
+      desc: CAN clock
+      type: clk
+      input: mux_can_clk
+
+  - clk_flexcomm0:
+      <<: *flexcomm_clk
+      input: div_flexcomm0
+  - clk_flexcomm1:
+      <<: *flexcomm_clk
+      input: div_flexcomm1
+  - clk_flexcomm2:
+      <<: *flexcomm_clk
+      input: div_flexcomm2
+  - clk_flexcomm3:
+      <<: *flexcomm_clk
+      input: div_flexcomm3
+  - clk_flexcomm4:
+      <<: *flexcomm_clk
+      input: div_flexcomm4
+  - clk_flexcomm5:
+      <<: *flexcomm_clk
+      input: div_flexcomm5
+  - clk_flexcomm6:
+      <<: *flexcomm_clk
+      input: div_flexcomm6
+  - clk_flexcomm7:
+      <<: *flexcomm_clk
+      input: div_flexcomm7
+
+  # muxes
+  - mux_main_clk_a:
+      desc: Main clock select A
+      type: mux
+      reg:  !addr [*MAINCLKSELA, [1,0]] # as type=mux -> what is this mux set to?
+      input:  # as a mux the reg value changes the input
+        0b00: clk_fro_12m
+        0b01: clk_in
+        0b10: clk_fro_1m
+        0b11: clk_fro_hf
+  - mux_main_clk_b:
+      desc: Main clock select B
+      type: mux
+      reg: !addr [*MAINCLKSELB, [2,0]]
+      input:
+        0b000: mux_main_clk_a
+        0b001: clk_pll0
+        0b010: clk_pll1
+        0b011: clk_32k_osc
+  - mux_pll0_clk:
+      desc: PLL0 clock select
+      type: mux
+      reg: !addr [*PLL0CLKSEL, [2, 0]]
+      input:
+        0b000: clk_fro_12m
+        0b001: clk_in
+        0b010: clk_fro_1m
+        0b011: clk_32k_osc
+        default: clk_none
+  - mux_adc_clk:
+      desc: ADC clock select
+      type: mux
+      reg: !addr [*ADCCLKSEL, [2, 0]]
+      input:
+        0b000: clk_main
+        0b001: clk_pll0
+        0b010: clk_fro_hf
+        0b011: clk_fro_1m
+        0b100: clk_xo_to_clk_adc
+        default: clk_none
+  - mux_usb_clk:
+      desc: USB clock select
+      type: mux
+      reg: !addr [*USB0CLKSEL, [2, 0]]
+      input:
+        0b000: clk_main
+        0b001: clk_pll0
+        0b011: clk_fro_hf
+        0b101: clk_pll1
+        default: clk_none
+  - mux_mclk_clk:
+      desc: clock selection for the i²s mclk
+      type: mux
+      reg: !addr [*MCLKCLKSEL, [2, 0]]
+      input:
+        0b000: clk_fro_hf
+        0b001: clk_pll0
+        0b010: RESERVED
+        0b011: RESERVED
+        default: clk_none
+  - mux_can_clk:
+      desc: CAN clock selector
+      type: mux
+      reg: !addr [*CANCLKSEL, [2, 0]]
+      input:
+        0b000: div_can_clk
+        0b001: clk_fro_1m
+        0b010: clk_32k_osc
+        default: clk_none
+
+  # for flexcomm
+  - mux_fc0_clk:
+      <<: *flexcomm_sel
+      reg: [*FCCLKSEL0, [2, 0]]
+  - mux_fc1_clk:
+      <<: *flexcomm_sel
+      reg: [*FCCLKSEL1, [2, 0]]
+  - mux_fc2_clk:
+      <<: *flexcomm_sel
+      reg: [*FCCLKSEL2, [2, 0]]
+  - mux_fc3_clk:
+      <<: *flexcomm_sel
+      reg: [*FCCLKSEL3, [2, 0]]
+  - mux_fc4_clk:
+      <<: *flexcomm_sel
+      reg: [*FCCLKSEL4, [2, 0]]
+  - mux_fc5_clk:
+      <<: *flexcomm_sel
+      reg: [*FCCLKSEL5, [2, 0]]
+  - mux_fc6_clk:
+      <<: *flexcomm_sel
+      reg: [*FCCLKSEL6, [2, 0]]
+  - mux_fc7_clk:
+      <<: *flexcomm_sel
+      reg: [*FCCLKSEL7, [2, 0]]
+
+  # divider
+  - div_clk_ahb:
+      desc: Main clock divider for the AHB bus, CPU and memory
+      type: div
+      r_div: !addr [*AHBCLKDIV, [7,0]]
+      value: !!lambda div -> 1 / (div + 1)
+      input: mux_main_clk_b
+  - div_adc_clk:
+      desc: ADC clock div
+      type: div
+      r_div: !addr [*ADCCLKDIV, [2, 0]]
+      value: !!lambda div -> div + 1
+      input: mux_adc_clk
+  - div_usb_clk:
+      desc: FS USB clock divider
+      type: div
+      r_div: !addr [*USB0CLKDIV, [7, 0]]
+      value: !!lambda div -> div + 1
+      input: mux_usb_clk
+  - div_mclk:
+      desc: MCLK clock divider
+      type: div
+      r_div: !addr [*MCLKDIV, [7, 0]]
+      value: !!lambda div -> div + 1
+      input: mux_mclk_clk
+  - div_froh_hf:
+      desc: clk_fro_hf divider
+      type: div
+      r_div: !addr [*FROHFDIV, [7, 0]]
+      value: !!lambda div -> div + 1
+      input: clk_fro_hf
+  - div_fc_clk_pll0:
+      desc: PLL0 clock divider for flexcomm
+      type: div
+      r_div: !addr [*PLL0CLKDIV, [7,0]]
+      value: !!lambda div -> div + 1  # a lambda function that defines the mapping
+      input: clk_pll0
+  - div_wwdt_clk:
+      desc: divider for the WDT
+      type: div
+      r_div: !addr [*WDTCLKDIV, [5, 0]]
+      value: !!lambda div -> div + 1
+      input: clk_fro_1m
+  - div_can_clk:
+      desc: can clock divider
+      type: div
+      r_div: !addr [*CANCLKDIV, [7, 0]]
+      value: !!lambda div -> div + 1
+      input: clk_main
+
+  - div_flexcomm0:
+      <<: *flexcomm_div
+      r_div: !addr [*FLEXFRG0CTRL, [7, 0]]
+      r_mult: !addr [*FLEXFRG0CTRL, [15, 8]]
+      input: mux_fc0_clk
+  - div_flexcomm1:
+      <<: *flexcomm_div
+      r_div: !addr [*FLEXFRG1CTRL, [7, 0]]
+      r_mult: !addr [*FLEXFRG1CTRL, [15, 8]]
+      input: mux_fc1_clk
+  - div_flexcomm2:
+      <<: *flexcomm_div
+      r_div: !addr [*FLEXFRG2CTRL, [7, 0]]
+      r_mult: !addr [*FLEXFRG2CTRL, [15, 8]]
+      input: mux_fc2_clk
+  - div_flexcomm3:
+      <<: *flexcomm_div
+      r_div: !addr [*FLEXFRG3CTRL, [7, 0]]
+      r_mult: !addr [*FLEXFRG3CTRL, [15, 8]]
+      input: mux_fc3_clk
+  - div_flexcomm4:
+      <<: *flexcomm_div
+      r_div: !addr [*FLEXFRG4CTRL, [7, 0]]
+      r_mult: !addr [*FLEXFRG4CTRL, [15, 8]]
+      input: mux_fc4_clk
+  - div_flexcomm5:
+      <<: *flexcomm_div
+      r_div: !addr [*FLEXFRG5CTRL, [7, 0]]
+      r_mult: !addr [*FLEXFRG5CTRL, [15, 8]]
+      input: mux_fc5_clk
+  - div_flexcomm6:
+      <<: *flexcomm_div
+      r_div: !addr [*FLEXFRG6CTRL, [7, 0]]
+      r_mult: !addr [*FLEXFRG6CTRL, [15, 8]]
+      input: mux_fc6_clk
+  - div_flexcomm7:
+      <<: *flexcomm_div
+      r_div: !addr [*FLEXFRG7CTRL, [7, 0]]
+      r_mult: !addr [*FLEXFRG7CTRL, [15, 8]]
+      input: mux_fc7_clk

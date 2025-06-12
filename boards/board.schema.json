@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "board.schema.json",
+  "$defs": {
+    "addr_schema": {
+      "type": "array",
+      "items": [
+        {
+          "type": ["array", "integer"]
+        },
+        {
+          "type": "array",
+          "items": {"type": "integer"}
+        }
+      ]
+    },
+    "is_enabled_schema": {
+      "type": "array",
+      "items": [
+        {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^\\d+$"
+          },
+          "additionalProperties": {
+            "type": "boolean"
+          },
+          "minProperties": 1
+        },
+        {
+          "$ref": "#/$defs/addr_schema"
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "item_ref_schema": {
+      "type": ["string", "null"],
+      "pattern": "^((clk|mux|div)_[a-zA-Z0-9_]+|RESERVED)$"
+    },
+    "lambda_schema": {
+      "type": "string",
+      "pattern": "^[a-zA-Z][a-zA-Z0-9_]*( *, *[a-zA-Z][a-zA-Z0-9_]*)* *->.*$"
+    }
+  },
+  "type": "object",
+  "required": ["name", "vendor"],
+  "properties": {
+    "name": { "type": "string" },
+    "vendor": { "type": "string" },
+    "defines": {
+      "type": "array"
+    },
+    "clocks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "patternProperties": {
+          "^clk_[a-zA-Z0-9_]+$": {
+            "required": ["type"],
+            "type": "object",
+            "properties": {
+              "desc": { "type": "string" },
+              "type": {
+                "type": "string",
+                "enum": ["clk", "pll"]
+              },
+              "is_enabled": {"$ref": "#/$defs/is_enabled_schema"},
+              "input": {"$ref": "#/$defs/item_ref_schema"}
+            },
+            "additionalProperties": false
+          },
+          "^mux_[a-zA-Z0-9_]+$": {
+            "required": ["type", "reg", "input"],
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "desc": { "type": "string" },
+              "type": { "const": "mux" },
+              "reg": { "$ref": "#/$defs/addr_schema" },
+              "input": {
+                "type": "object",
+                "patternProperties": {
+                  "^(0b[01]+|\\d+|0x[a-fA-F0-9]+)$": {
+                    "$ref": "#/$defs/item_ref_schema"
+                  }
+                }
+              }
+            }
+          },
+          "^div_[a-zA-Z0-9_]+$": {
+            "required": ["type", "value", "input"],
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": {
+              "^r_[a-zA-Z][0-9a-zA-Z_]+$": { "$ref": "#/$defs/addr_schema" }
+            },
+            "properties": {
+              "desc": { "type": "string" },
+              "type": { "const": "div" },
+              "input": { "$ref": "#/$defs/item_ref_schema" },
+              "value": { "$ref": "#/$defs/lambda_schema" }
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
