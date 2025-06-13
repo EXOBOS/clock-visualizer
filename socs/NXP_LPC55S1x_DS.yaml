@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=./board.schema.json
+# yaml-language-server: $schema=./soc.schema.json
 name: LPC55S51x_DS
 vendor: NXP
 defines:
@@ -94,8 +94,6 @@ defines:
   - &flexcomm_div
       desc: flexcomm fractional rate divider
       type: div
-      r_div: 0
-      r_mult: 0
       value: !!lambda div, mult -> 1 + mult / (div + 1)
 
   - &flexcomm_clk
@@ -133,8 +131,8 @@ clocks:
       is_enabled: [*clock_enable, !addr [*PLL0CTRL, [21]]]
   - clk_pll1:
       desc: The output of the PLL1
-      type: clk
-      input: PLL1CLKSEL
+      type: pll
+      input: mux_pll1_clk
       is_enabled: [*clock_enable, !addr [*PLL1CTRL, [21]]]
 
   # derived clocks
