@@ -3,8 +3,7 @@ Copyright: 2025 Auxsys
 
 Clock description structure and respective parser
 """
-from collections.abc import Callable
-from typing import TextIO, Any
+from typing import TextIO, Callable, Iterator
 from pathlib import Path
 from dataclasses import dataclass
 import json
@@ -52,25 +51,52 @@ class ClockType():
     name: str
     description: str
 
+    def list_inputs(self) -> None | list["ClockType"]:
+        raise NotImplementedError()
+
+    def __hash__(self) -> int:
+        return self.name.__hash__()
+
 @dataclass()
 class Clock(ClockType):
     is_enabled: None | tuple[dict, AddrObject]
     input: None | ClockType
 
+    def list_inputs(self) -> None | list[ClockType]:
+        return [self.input] if self.input else None
+
+    def __hash__(self) -> int:
+        return self.name.__hash__()
+
 @dataclass()
 class Pll(Clock):
     ...
 
+    def __hash__(self) -> int:
+        return self.name.__hash__()
+
 @dataclass()
 class Mux(ClockType):
     register: AddrObject
-    input: dict[int, None | ClockType]
+    inputs: dict[int, None | ClockType]
+
+    def list_inputs(self) -> None | list[ClockType]:
+        return [ ins for ins in self.inputs.values() if ins is not None ]
+
+    def __hash__(self) -> int:
+        return self.name.__hash__()
 
 @dataclass()
 class Div(ClockType):
     input: ClockType
     value: Callable[[list[int]], float]
     registers: dict[str, AddrObject]
+
+    def list_inputs(self) -> None | list[ClockType]:
+        return [self.input]
+
+    def __hash__(self) -> int:
+        return self.name.__hash__()
 
 class ClkDescription:
     def __init__(self, name, vendor, clocks) -> None:
@@ -80,6 +106,28 @@ class ClkDescription:
 
     def get_clk(self, name: str) -> ClockType | None:
         return self.clocks.get(name)
+
+    def get_clks(self) -> Iterator[ClockType]:
+        return self.clocks.values()
+
+    def get_input_clks(self) -> set[ClockType]:
+        """These are clocks that don't have an input themselves"""
+        return { clk for clk in self.get_clks() if isinstance(clk, Clock) and clk.input is None }
+
+    def get_output_clks(self) -> set[ClockType]:
+        """These are clocks that are not connected anywhere else"""
+        clocks: set[ClockType] = { clk for clk in self.get_clks() if isinstance(clk, Clock) }
+        is_used: set[ClockType] = set()
+        for clk in self.clocks.values():
+            if clk.list_inputs() is not None:
+                is_used.update(clk.list_inputs())
+
+        return clocks - is_used
+
+
+    ################
+    # Data Parsing #
+    ################
 
     @staticmethod
     def validate_data(schema: dict, data: dict):
@@ -140,7 +188,7 @@ class ClkDescription:
                 item = Mux(
                     name=name, description=data["desc"],
                     register=data["reg"],
-                    input={ k: None if v == "RESERVED" else v for k,v in data["input"].items() }
+                    inputs={ k: None if v == "RESERVED" else v for k,v in data["input"].items() }
                 )
             elif data["type"] == "div":
                 registers = {
@@ -162,8 +210,10 @@ class ClkDescription:
             if isinstance(clock, Clock):
                 clock.input = clocks.get(clock.input, None)
             elif isinstance(clock, Mux):
-                clock.input = { k: clocks[name] if name else None  for k, name in clock.input.items() }
+                clock.inputs = { k: clocks[name] if name else None  for k, name in clock.inputs.items() }
             elif isinstance(clock, Div):
                 clock.input = clocks[clock.input]
+            else:
+                raise NotImplementedError(f"Missing type {clock.__class__}")
 
         return cls(soc_data["name"], soc_data["vendor"], clocks)
