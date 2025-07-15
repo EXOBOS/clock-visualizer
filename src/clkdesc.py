@@ -124,6 +124,14 @@ class ClkDescription:
 
         return clocks - is_used
 
+    def list_outputs_for_clk(self, clk: ClockType) -> set[ClockType]:
+        outputs: set[ClockType] = set()
+
+        for oclk in self.clocks.values():
+            if (l := oclk.list_inputs()) is not None and clk in l:
+                outputs.add(oclk)
+
+        return outputs
 
     ################
     # Data Parsing #

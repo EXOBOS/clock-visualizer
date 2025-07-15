@@ -5,17 +5,22 @@ Using the tree and a respective highlighting node, this will
 graph the tree using graphviz.
 """
 import graphviz
+
+from .filters.accumulator import FilterAccumulator
 from .clkdesc import ClkDescription, Clock, ClockType, Div, Mux
 
 class Grapher():
-    def __init__(self, clocks: ClkDescription) -> None:
+    def __init__(self, clocks: ClkDescription, filters: FilterAccumulator) -> None:
         self.clocks = clocks
+        self.filters = filters
 
         self.build_raw_graph()
         print(self.graph.source)
 
-    @staticmethod
-    def add_edge(graph: graphviz.Digraph, clk_from: ClockType, clk_to: ClockType):
+    def add_edge(self, graph: graphviz.Digraph, clk_from: ClockType, clk_to: ClockType):
+        if self.filters.lookup_edge(clk_from, clk_to) is None:
+            return
+
         from_s = clk_from.name
         if isinstance(clk_from, Mux):
             from_s += ":out"
@@ -24,7 +29,7 @@ class Grapher():
         if isinstance(clk_to, Mux):
             to_s += f":{clk_from.name}"
 
-        graph.edge(from_s + ":e", to_s + ":w")
+        graph.edge(from_s + ":e", to_s + ":w", color=str(self.filters.lookup_edge(clk_from, clk_to)))
 
     def build_raw_graph(self):
         graph = graphviz.Digraph(
@@ -34,6 +39,9 @@ class Grapher():
 
         # add nodes
         for clk in self.clocks.get_clks():
+            if self.filters.lookup_clock(clk) is None:
+                continue
+
             if isinstance(clk, Mux):
                 with graph.subgraph(name=f"cluster_{clk.name}", graph_attr={"labelloc": "b", "color": "none", "label": clk.name}) as g:
                     _inputs = []
@@ -54,9 +62,9 @@ class Grapher():
                         )
 
                     struct_desc = f"{{{{{ '|'.join(_inputs) }}}|<out> out}}"
-                    g.node(clk.name, struct_desc)
+                    g.node(clk.name, struct_desc, color=str(self.filters.lookup_clock(clk)))
             elif isinstance(clk, Clock) or isinstance(clk, Div):
-                graph.node(clk.name, clk.name)
+                graph.node(clk.name, clk.name, color=str(self.filters.lookup_clock(clk)))
             else:
                 raise NotImplementedError(f"Missing type {clk.__class__}")
 
@@ -77,12 +85,14 @@ class Grapher():
         with graph.subgraph() as s:
             s.attr(rank="same")
             for n in self.clocks.get_input_clks():
-                s.node(n.name)
+                if self.filters.lookup_clock(n) is not None:
+                    s.node(n.name)
 
         with graph.subgraph() as s:
             s.attr(rank="same")
             for n in self.clocks.get_output_clks():
-                s.node(n.name)
+                if self.filters.lookup_clock(n) is not None:
+                    s.node(n.name)
 
         self.graph = graph
 
