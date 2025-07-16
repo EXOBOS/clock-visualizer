@@ -280,28 +280,28 @@ clocks:
   # for flexcomm
   - mux_fc0_clk:
       <<: *flexcomm_sel
-      reg: [*FCCLKSEL0, [2, 0]]
+      reg: !addr32le [*FCCLKSEL0, [2, 0]]
   - mux_fc1_clk:
       <<: *flexcomm_sel
-      reg: [*FCCLKSEL1, [2, 0]]
+      reg: !addr32le [*FCCLKSEL1, [2, 0]]
   - mux_fc2_clk:
       <<: *flexcomm_sel
-      reg: [*FCCLKSEL2, [2, 0]]
+      reg: !addr32le [*FCCLKSEL2, [2, 0]]
   - mux_fc3_clk:
       <<: *flexcomm_sel
-      reg: [*FCCLKSEL3, [2, 0]]
+      reg: !addr32le [*FCCLKSEL3, [2, 0]]
   - mux_fc4_clk:
       <<: *flexcomm_sel
-      reg: [*FCCLKSEL4, [2, 0]]
+      reg: !addr32le [*FCCLKSEL4, [2, 0]]
   - mux_fc5_clk:
       <<: *flexcomm_sel
-      reg: [*FCCLKSEL5, [2, 0]]
+      reg: !addr32le [*FCCLKSEL5, [2, 0]]
   - mux_fc6_clk:
       <<: *flexcomm_sel
-      reg: [*FCCLKSEL6, [2, 0]]
+      reg: !addr32le [*FCCLKSEL6, [2, 0]]
   - mux_fc7_clk:
       <<: *flexcomm_sel
-      reg: [*FCCLKSEL7, [2, 0]]
+      reg: !addr32le [*FCCLKSEL7, [2, 0]]
 
   # divider
   - div_clk_ahb:
