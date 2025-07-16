@@ -4,7 +4,7 @@ Copyright: 2025 Auxsys
 A accumulator to combine multiple filters. Also responsible for handling
 coloring, combinations, …
 """
-from ..clkdesc import ClockType
+from ..graphs import ClockType
 from .abstractfilter import AbstractFilter, Property, State
 from ..utils.color import Color
 

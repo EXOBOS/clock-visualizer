@@ -1,7 +1,7 @@
 """
 Copyright: 2025 Auxsys
 
-Clock description structure and respective parser
+Clock graph description structure and respective parser
 """
 from typing import TextIO, Callable, Iterator
 from pathlib import Path
@@ -98,7 +98,7 @@ class Div(ClockType):
     def __hash__(self) -> int:
         return self.name.__hash__()
 
-class ClkDescription:
+class ClockGraph:
     def __init__(self, name, vendor, clocks) -> None:
         self.name = name
         self.vendor = vendor
@@ -156,7 +156,7 @@ class ClkDescription:
 
 
     @classmethod
-    def from_yaml(cls, soc_file: TextIO, schema_file: str | Path | None = Path(__file__).parent / "../socs/soc.schema.json"):
+    def from_yaml(cls, soc_file: TextIO, schema_file: str | Path | None = Path(__file__).parent / "../../socs/soc.schema.json"):
         soc_data = soc_file.read()
 
         def tag_add_constructor(loader: Loader, node):

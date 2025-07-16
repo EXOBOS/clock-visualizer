@@ -7,10 +7,10 @@ graph the tree using graphviz.
 import graphviz
 
 from .filters.accumulator import FilterAccumulator
-from .clkdesc import ClkDescription, Clock, ClockType, Div, Mux
+from .graphs import ClockGraph, Clock, ClockType, Div, Mux
 
 class Grapher():
-    def __init__(self, clocks: ClkDescription, filters: FilterAccumulator) -> None:
+    def __init__(self, clocks: ClockGraph, filters: FilterAccumulator) -> None:
         self.clocks = clocks
         self.filters = filters
 

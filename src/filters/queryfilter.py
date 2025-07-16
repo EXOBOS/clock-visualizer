@@ -3,11 +3,11 @@ Copyright: 2025 Auxsys
 
 Clock filter using a clock name
 """
-from ..clkdesc import ClkDescription, ClockType, Clock, Div, Mux
+from ..graphs import ClockGraph, ClockType
 from .abstractfilter import AbstractFilter, Property, State
 
 class QueryFilter(AbstractFilter):
-    def __init__(self, graph: ClkDescription, query: ClockType,
+    def __init__(self, graph: ClockGraph, query: ClockType,
                  show_inputs: bool = True, show_outputs: bool = True) -> None:
         # it is okay here to pass the graph as the 'lifetime' of it is longer than this class
         self._graph = graph
@@ -33,7 +33,7 @@ class QueryFilter(AbstractFilter):
             self._filtered_graph.update(find_predecessors([self._query]))
 
         ## find all successors / outputs
-        def find_successors(graph: ClkDescription, path: list[ClockType]) -> set[ClockType]:
+        def find_successors(graph: ClockGraph, path: list[ClockType]) -> set[ClockType]:
             """I am aware that this is not efficient, but our graphs are small"""
             all_outputs = {path[-1]}
 
