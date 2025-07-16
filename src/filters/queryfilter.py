@@ -20,7 +20,7 @@ class QueryFilter(AbstractFilter):
         def find_predecessors(path: list[ClockType]) -> set[ClockType]:
             """I am aware that this is not efficient, but our graphs are small"""
             all_inputs = {path[-1]}
-            if (inputs := path[-1].list_inputs()) is not None:
+            if (inputs := graph.list_inputs_for_clk(path[-1])) is not None:
                 for inp in inputs:
                     if inp in path:
                         raise Exception(f"Loop found in clk graph. See node `{inp}`")

@@ -6,7 +6,7 @@ coloring, combinations, …
 """
 from ..graphs import ClockType
 from .abstractfilter import AbstractFilter, Property, State
-from ..utils.color import Color
+from ..utils import Color
 
 class FilterAccumulator:
     _color_dict = {

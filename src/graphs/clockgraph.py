@@ -3,102 +3,20 @@ Copyright: 2025 Auxsys
 
 Clock graph description structure and respective parser
 """
-from typing import TextIO, Callable, Iterator
+from typing import TextIO, Iterator
 from pathlib import Path
-from dataclasses import dataclass
 import json
 import jsonschema
 
 import yaml
-from yaml import Loader, Dumper  # we don't need the speed from the c parser
+# we don't need the speed from the c parser
+from yaml import Loader
 
-class AddrObject(yaml.YAMLObject):
-    yaml_loader = Loader
-    yaml_dumper = Dumper
+from .elements import ClockType, Clock, Mux, Pll, Div
+from .yamlobjects import AddrObject, LambdaObject
+from .abstractgraph import AbstractGraph
 
-    yaml_tag = "!addr"
-
-    def __init__(self, addr, bit) -> None:
-        self.addr = addr
-        self.bit = bit
-
-    @classmethod
-    def from_yaml(cls, loader, node):
-        addr, bit = loader.construct_sequence(node)
-        return cls(addr, bit)
-
-    def to_json(self):
-        return [self.addr, self.bit]
-
-class LambdaObject(yaml.YAMLObject):
-    yaml_loader = Loader
-    yaml_dumper = Dumper
-
-    yaml_tag = "tag:yaml.org,2002:lambda"
-
-    def __init__(self, original: str) -> None:
-        self.original = original
-
-    def __call__(self, ins: list[int]) -> int:
-        raise NotImplementedError("Not yet implemented")
-
-    @classmethod
-    def from_yaml(cls, loader, node):
-        return cls(loader.construct_yaml_str(node))
-
-@dataclass()
-class ClockType():
-    name: str
-    description: str
-
-    def list_inputs(self) -> None | list["ClockType"]:
-        raise NotImplementedError()
-
-    def __hash__(self) -> int:
-        return self.name.__hash__()
-
-@dataclass()
-class Clock(ClockType):
-    is_enabled: None | tuple[dict, AddrObject]
-    input: None | ClockType
-
-    def list_inputs(self) -> None | list[ClockType]:
-        return [self.input] if self.input else None
-
-    def __hash__(self) -> int:
-        return self.name.__hash__()
-
-@dataclass()
-class Pll(Clock):
-    ...
-
-    def __hash__(self) -> int:
-        return self.name.__hash__()
-
-@dataclass()
-class Mux(ClockType):
-    register: AddrObject
-    inputs: dict[int, None | ClockType]
-
-    def list_inputs(self) -> None | list[ClockType]:
-        return [ ins for ins in self.inputs.values() if ins is not None ]
-
-    def __hash__(self) -> int:
-        return self.name.__hash__()
-
-@dataclass()
-class Div(ClockType):
-    input: ClockType
-    value: Callable[[list[int]], float]
-    registers: dict[str, AddrObject]
-
-    def list_inputs(self) -> None | list[ClockType]:
-        return [self.input]
-
-    def __hash__(self) -> int:
-        return self.name.__hash__()
-
-class ClockGraph:
+class ClockGraph(AbstractGraph):
     def __init__(self, name, vendor, clocks) -> None:
         self.name = name
         self.vendor = vendor
@@ -132,6 +50,9 @@ class ClockGraph:
                 outputs.add(oclk)
 
         return outputs
+
+    def list_inputs_for_clk(self, clk: ClockType) -> list[ClockType]:
+        return [] if (d := clk.list_inputs()) is None else d
 
     ################
     # Data Parsing #

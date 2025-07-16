@@ -4,8 +4,9 @@ Copyright: 2025 Auxsys
 abstract class to define interface of filter
 """
 from abc import ABC, abstractmethod
-from ..graphs import ClockType
 from enum import Enum
+
+from ..graphs import ClockType
 
 class State(Enum):
     UNKNOWN = None

@@ -6,7 +6,7 @@ graph the tree using graphviz.
 """
 import graphviz
 
-from .filters.accumulator import FilterAccumulator
+from .filters import FilterAccumulator
 from .graphs import ClockGraph, Clock, ClockType, Div, Mux
 
 class Grapher():
