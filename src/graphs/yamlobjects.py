@@ -37,7 +37,7 @@ class AddrObject(yaml.YAMLObject):
 
     @classmethod
     def from_yaml(cls, loader, node):
-        addr, bit = loader.construct_sequence(node)
+        addr, bit = loader.construct_sequence(node, deep=True)
         return cls(addr, bit)
 
     def to_json(self):
