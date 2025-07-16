@@ -35,7 +35,25 @@ class SparseMemory:
         self._segments: dict[Segment, bytearray] = {}
 
     def _cleanup_segments(self):
-        ...
+        cur_data: None | bytearray = None
+        cur_segs: list = []
+        for seg in [*sorted(self._segments.keys()), None]:
+            if len(cur_segs) > 0 and seg is not None and cur_segs[-1].stop == seg.start:
+                cur_segs.append(seg)
+                assert cur_data is not None, "Yeah this should never be the case"
+                cur_data += self._segments[seg]
+            else:
+                if len(cur_segs) > 1:
+                    for cur_seg in cur_segs:
+                        del self._segments[cur_seg]
+                    assert cur_data is not None, "Yeah this should never be the case"
+                    self._segments[Segment(cur_segs[0].start, cur_segs[-1].stop)] = cur_data
+
+                if seg is None:
+                    break
+
+                cur_segs = [seg]
+                cur_data = self._segments[seg].copy()
 
     def __getitem__(self, key: int | slice) -> int | bytes:
         if isinstance(key, int):
@@ -114,6 +132,8 @@ class SparseMemory:
             self._segments[Segment(key.start, key.stop)] = bytearray(value)
         else:
             raise KeyError(f"Only int and slice supported")
+
+        self._cleanup_segments()
 
     def get_raw(self, start_address: int = 0) -> bytes:
         data = b""
