@@ -2,6 +2,6 @@
   "yaml.customTags": [
     "tag:yaml.org,2002:lambda scalar",
     "!add sequence",
-    "!addr sequence"
+    "!addr32le sequence"
   ]
 }

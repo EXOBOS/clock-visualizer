@@ -5,3 +5,4 @@ Module that contains clock graphs in various forms
 """
 from .clockgraph import *
 from .elements import *
+from .memoryclockgraph import MemoryClockGraph

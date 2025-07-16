@@ -5,8 +5,10 @@ Class that handles reading and working on sparse memory. Used to
 represent device memory containing the clock registers.
 """
 from functools import total_ordering
-from typing import IO
+from typing import IO, overload
 from dataclasses import dataclass
+
+from ..graphs.yamlobjects import AddrObject
 
 @total_ordering
 @dataclass(frozen=True)
@@ -55,6 +57,14 @@ class SparseMemory:
                 cur_segs = [seg]
                 cur_data = self._segments[seg].copy()
 
+    @overload
+    def __getitem__(self, key: int) -> int:
+        ...
+
+    @overload
+    def __getitem__(self, key: slice) -> bytes:
+        ...
+
     def __getitem__(self, key: int | slice) -> int | bytes:
         if isinstance(key, int):
             for seg in self._segments.keys():
@@ -86,6 +96,14 @@ class SparseMemory:
             return data
         else:
             raise KeyError(f"Only int and slice supported")
+
+    @overload
+    def __setitem__(self, key: int, value: int):
+        ...
+
+    @overload
+    def __setitem__(self, key: slice, value: bytes):
+        ...
 
     def __setitem__(self, key: int | slice, value: int | bytes):
         if isinstance(key, int):
@@ -134,6 +152,20 @@ class SparseMemory:
             raise KeyError(f"Only int and slice supported")
 
         self._cleanup_segments()
+
+    def get_register(self, addr: AddrObject) -> int:
+        try:
+            register = self[addr.addr:addr.addr + addr.width // 8]
+            assert addr.endianess.value is not None
+            value = int.from_bytes(register, addr.endianess.value, signed=False)
+
+            if len(addr.bit) == 1:
+                return (value >> addr.bit[0]) & 0x1
+            else:
+                map = ~(~1 << addr.bit[0]) & (~0 << addr.bit[1])
+                return (value & map) >> addr.bit[1]
+        except Exception as e:
+            raise ValueError(f"Error trying to read register with {addr}", e)
 
     def get_raw(self, start_address: int = 0) -> bytes:
         data = b""

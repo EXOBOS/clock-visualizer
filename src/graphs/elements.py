@@ -3,6 +3,11 @@ Copyright: 2025 Auxsys
 
 Elements of the clock graph
 """
+from __future__ import annotations
+from typing import Callable, TYPE_CHECKING
+if TYPE_CHECKING:
+    from ..utils import SparseMemory
+
 from dataclasses import dataclass
 
 from .yamlobjects import AddrObject
@@ -26,6 +31,14 @@ class Clock(ClockType):
     def list_inputs(self) -> None | list[ClockType]:
         return [self.input] if self.input else None
 
+    def parse(self, memory: SparseMemory) -> bool:
+        if self.is_enabled is None:
+            return True
+        value, addr = self.is_enabled
+        if len(addr.bit) != 1:
+            raise ValueError(f"Invalid bits ({addr.bit}) for this operation [required len=1]")
+        return value[memory.get_register(addr)]
+
     def __hash__(self) -> int:
         return self.name.__hash__()
 
@@ -43,6 +56,9 @@ class Mux(ClockType):
 
     def list_inputs(self) -> None | list[ClockType]:
         return [ ins for ins in self.inputs.values() if ins is not None ]
+
+    def parse(self, memory: SparseMemory) -> int:
+        return memory.get_register(self.register)
 
     def __hash__(self) -> int:
         return self.name.__hash__()

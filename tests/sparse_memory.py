@@ -7,8 +7,27 @@ import unittest
 import textwrap
 import io
 from src.utils.sparse_memory import SparseMemory
+from src.graphs.yamlobjects import AddrObject32LE
 
 class TestSparseMemory(unittest.TestCase):
+    def test_register_access(self):
+        self.mem[0:5] = b"\xaa\x55\xF0\x0F\x11"
+        addr = AddrObject32LE(0x0, [0])  # retrieving from the 0xaa
+        self.assertEqual(self.mem.get_register(addr), 0)
+
+        addr = AddrObject32LE(0x0, [1])
+        self.assertEqual(self.mem.get_register(addr), 1)
+
+        addr = AddrObject32LE(0x0, [8])  # get from 0x55
+        self.assertEqual(self.mem.get_register(addr), 1)
+
+        addr = AddrObject32LE(0x0, [23, 16])
+        self.assertEqual(self.mem.get_register(addr), 0xF0)
+
+        addr = AddrObject32LE(0x1, [19, 12])  # retrieving in between
+        self.assertEqual(self.mem.get_register(addr), 0xFF)
+
+
     def setUp(self):
         self.def_byte = bytes([0xFF])
         self.mem = SparseMemory(default_byte=self.def_byte[0])
