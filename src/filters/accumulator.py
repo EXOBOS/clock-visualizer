@@ -23,14 +23,22 @@ class FilterAccumulator:
         self._filters.append(filter)
 
     def lookup_clock(self, clock: ClockType) -> Color | None:
-        filter = self._filters[0]  # where are only using the first one for now
+        opinions = [filter.should_show_clock(clock) for filter in self._filters]
 
-        return self._color_dict[filter.should_show_clock(clock)]
+        if State.SPECIAL in opinions:
+            return self._color_dict[State.SPECIAL]
+        if State.HIDE in opinions:
+            return self._color_dict[State.HIDE]
+        return self._color_dict[State.SHOW]
 
     def lookup_edge(self, n_from: ClockType, n_to: ClockType) -> Color | None:
-        filter = self._filters[0]  # where are only using the first one for now
+        opinions = [filter.should_show_edge(n_from, n_to) for filter in self._filters]
 
-        return self._color_dict[filter.should_show_edge(n_from, n_to)]
+        if State.SPECIAL in opinions:
+            return self._color_dict[State.SPECIAL]
+        if State.HIDE in opinions:
+            return self._color_dict[State.HIDE]
+        return self._color_dict[State.SHOW]
 
     def lookup_clock_properties(self, clock: ClockType) -> dict[type[Property], Property]:
         prop_dict = {}

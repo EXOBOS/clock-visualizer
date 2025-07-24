@@ -16,5 +16,6 @@ qfilter = QueryFilter(mem_graph, clkgraph.get_clk("clk_flexcomm6"))
 mfilter = MemoryVisFilter(mem_graph)
 filters = FilterAccumulator()
 filters.add_filter(qfilter)
+filters.add_filter(mfilter)
 Grapher(clkgraph, filters)
 
