@@ -43,10 +43,16 @@ class AddrObject(yaml.YAMLObject):
     def to_json(self):
         return [self.addr, self.bit]
 
+    def __copy__(self):
+        return AddrObject(self.addr, self.bit)
+
 class AddrObject32LE(AddrObject):
     width = 32
     endianess = AddrObject.Endianess.LE
     yaml_tag = "!addr32le"
+
+    def __copy__(self):
+        return AddrObject32LE(self.addr, self.bit)
 
 class LambdaObject(yaml.YAMLObject):
     yaml_loader = Loader

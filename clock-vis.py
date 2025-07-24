@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from src.graphs import ClockGraph, MemoryClockGraph
-from src.filters import FilterAccumulator, QueryFilter
+from src.filters import FilterAccumulator, QueryFilter, MemoryVisFilter
 from src.grapher import Grapher
 from src.utils import SparseMemory
 
@@ -12,8 +12,9 @@ with open("./tmp/stm32-syscon.bin", "r") as fp:
     memory = SparseMemory.from_intelhex(fp)
 mem_graph = MemoryClockGraph(clkgraph, memory)
 
-filter = QueryFilter(mem_graph, clkgraph.get_clk("clk_main"))
+qfilter = QueryFilter(mem_graph, clkgraph.get_clk("clk_flexcomm6"))
+mfilter = MemoryVisFilter(mem_graph)
 filters = FilterAccumulator()
-filters.add_filter(filter)
+filters.add_filter(qfilter)
 Grapher(clkgraph, filters)
 

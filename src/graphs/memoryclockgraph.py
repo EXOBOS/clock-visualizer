@@ -101,3 +101,15 @@ class MemoryClockGraph(AbstractGraph):
                 assert len(ins) <= 1, f"There should be only one input for clk {parsed}. Got {ins}"
                 return ins
 
+    def get_parsed_for_clk(self, clk: ClockType) -> ParsedClockType:
+        return self._parsednodes[clk]
+
+    def get_registers(self, clk: ClockType) -> dict[int, tuple[int, int]]:
+        regs = dict()
+
+        for reg in clk.used_registers:
+            reg.bit = (reg.width, 0)
+            regs[reg.addr] = (self._memory.get_register(reg), reg.width)
+
+        return regs
+
