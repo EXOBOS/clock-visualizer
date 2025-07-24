@@ -7,11 +7,13 @@ from src.utils import SparseMemory
 with open('./socs/NXP_LPC55S1x_DS.yaml', 'r') as fp:
     clkgraph = ClockGraph.from_yaml(fp)
 
-memory = SparseMemory()
+#memory = SparseMemory()
+with open("./tmp/stm32-syscon.bin", "r") as fp:
+    memory = SparseMemory.from_intelhex(fp)
 mem_graph = MemoryClockGraph(clkgraph, memory)
 
-filter = QueryFilter(clkgraph, clkgraph.get_clk("clk_pll1"))
+filter = QueryFilter(mem_graph, clkgraph.get_clk("clk_main"))
 filters = FilterAccumulator()
 filters.add_filter(filter)
-#Grapher(clkgraph, filters)
+Grapher(clkgraph, filters)
 

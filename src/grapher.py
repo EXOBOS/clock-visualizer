@@ -7,10 +7,10 @@ graph the tree using graphviz.
 import graphviz
 
 from .filters import FilterAccumulator
-from .graphs import ClockGraph, Clock, ClockType, Div, Mux
+from .graphs import AbstractGraph, Clock, ClockType, Div, Mux
 
 class Grapher():
-    def __init__(self, clocks: ClockGraph, filters: FilterAccumulator) -> None:
+    def __init__(self, clocks: AbstractGraph, filters: FilterAccumulator) -> None:
         self.clocks = clocks
         self.filters = filters
 
@@ -70,16 +70,8 @@ class Grapher():
 
         # add edges
         for clk in self.clocks.get_clks():
-            if isinstance(clk, Mux):
-                for inp in clk.inputs.values():
-                    if inp is not None:
-                        self.add_edge(graph, inp, clk)
-            elif isinstance(clk, Clock) or isinstance(clk, Div):
-                if clk.input is None:
-                    continue
-                self.add_edge(graph, clk.input, clk)
-            else:
-                raise NotImplementedError(f"Missing type {clk.__class__}")
+            for inp in self.clocks.list_inputs_for_clk(clk):
+                self.add_edge(graph, inp, clk)
 
         # find start / endpoints
         with graph.subgraph() as s:

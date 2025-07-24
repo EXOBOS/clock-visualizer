@@ -58,9 +58,9 @@ class QueryFilter(AbstractFilter):
 
     def should_show_edge(self, n_from: ClockType, n_to: ClockType) -> State:
         if n_from in self._filtered_graph and n_to in self._filtered_graph:
-            return State.SHOW
-        else:
-            return State.HIDE
+            if n_from in self._graph.list_inputs_for_clk(n_to):
+                return State.SHOW
+        return State.HIDE
 
     def get_clock_property(self, clk: ClockType) -> Property | None:
         return None
