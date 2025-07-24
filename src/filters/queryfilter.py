@@ -62,5 +62,5 @@ class QueryFilter(AbstractFilter):
                 return State.SHOW
         return State.HIDE
 
-    def get_clock_property(self, clk: ClockType) -> Property | None:
+    def get_clock_properties(self, clk: ClockType) -> list[Property] | None:
         return None

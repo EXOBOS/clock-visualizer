@@ -36,5 +36,5 @@ class AbstractFilter(ABC):
         ...
 
     @abstractmethod
-    def get_clock_property(self, clk: ClockType) -> Property | None:
+    def get_clock_properties(self, clk: ClockType) -> list[Property] | None:
         ...

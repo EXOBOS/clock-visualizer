@@ -32,8 +32,13 @@ class FilterAccumulator:
 
         return self._color_dict[filter.should_show_edge(n_from, n_to)]
 
-    def lookup_clock_properties(self, clock: ClockType) -> list[Property]:
-        return [
-            prop for filter in self._filters
-            if (prop := filter.get_clock_property(clock)) is not None
-        ]
+    def lookup_clock_properties(self, clock: ClockType) -> dict[type[Property], Property]:
+        prop_dict = {}
+
+        for filter in self._filters:
+            if (props := filter.get_clock_properties(clock)) is not None:
+                for prop in props:
+                    assert prop.__class__ not in prop_dict
+
+                    prop_dict[prop.__class__] = prop
+        return prop_dict
