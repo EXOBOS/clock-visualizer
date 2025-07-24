@@ -64,7 +64,7 @@ class Pll(Clock):
 @dataclass()
 class Mux(ClockType):
     register: AddrObject
-    inputs: dict[int, None | ClockType]
+    inputs: dict[int | str, None | ClockType]
 
     @property
     def used_registers(self) -> set[AddrObject]:
