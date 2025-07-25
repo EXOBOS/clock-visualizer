@@ -6,12 +6,18 @@ represent device memory containing the clock registers.
 """
 from functools import total_ordering
 from typing import IO, overload
+from pathlib import Path
 from dataclasses import dataclass
 
 from ..graphs.yamlobjects import AddrObject
 
 class NoDefaultByteException(Exception):
     ...
+
+class UnknownFiletypeError(Exception):
+    def __init__(self, *args: object, supported: dict[str, str]) -> None:
+        super().__init__(*args)
+        self.supported = supported
 
 class ParsingError(Exception):
     def __init__(self, record_number: int, record: str, *args: object) -> None:
@@ -214,6 +220,25 @@ class SparseMemory:
             data += self._segments[key]  # add our data
 
         return data
+
+    #######################
+    ####    PARSER     ####
+    #######################
+
+    @classmethod
+    def parse_file(cls, file: Path, *, filler_byte: int | None = 0x00) -> "SparseMemory":
+        parser_dict = {
+            ".ihex": ("Intel Hex", cls.from_intelhex),
+        }
+
+        if file.suffix.lower() in parser_dict:
+            with file.open("r") as fp:
+                return parser_dict[file.suffix.lower()][1](fp, filler_byte=filler_byte)
+        else:
+            raise UnknownFiletypeError(
+                f"Memory file with suffix {file.suffix} is not known.",
+                supported={k: v[0] for k, v in parser_dict.items() }
+            )
 
     @classmethod
     def from_intelhex(cls, indata: IO[str], *, filler_byte: int | None = 0x00) -> "SparseMemory":
