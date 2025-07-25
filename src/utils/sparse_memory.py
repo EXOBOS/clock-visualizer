@@ -91,7 +91,7 @@ class SparseMemory:
                     data[seg.start - key.start:] = self._segments[seg][:key.stop - seg.start]
                 elif key.start <= seg.stop and seg.stop <= key.stop:
                     # -00[00-]
-                    data[:seg.stop - key.start] = self._segments[seg][key.start - seg.stop:]
+                    data[:seg.stop - key.start] = self._segments[seg][key.start - seg.start:]
 
             return data
         else:
