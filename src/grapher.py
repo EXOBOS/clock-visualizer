@@ -10,12 +10,12 @@ from .filters import FilterAccumulator, MemPropertyRegisters, MemPropertyIsEnabl
 from .graphs import AbstractGraph, Clock, ClockType, Div, Mux
 
 class Grapher():
-    def __init__(self, clocks: AbstractGraph, filters: FilterAccumulator) -> None:
+    def __init__(self, clocks: AbstractGraph, filters: FilterAccumulator, title: str | None = None) -> None:
         self.clocks = clocks
         self.filters = filters
 
-        self.build_raw_graph()
         print(self.graph.source)
+        self.build_raw_graph(title)
 
     def add_edge(self, graph: graphviz.Digraph, clk_from: ClockType, clk_to: ClockType):
         if self.filters.lookup_edge(clk_from, clk_to) is None:
@@ -100,10 +100,14 @@ class Grapher():
     def build_div(self, graph: graphviz.Digraph, clk: Div):
         graph.node(clk.name, self.build_label(clk), color=str(self.filters.lookup_clock(clk)))
 
-    def build_raw_graph(self):
+    def build_raw_graph(self, title: str | None):
         graph = graphviz.Digraph(
             node_attr={"fontname": "Sans-Serif", "shape": "record"},
-            graph_attr={"fontname": "Sans-Serif", "splines": "polyline", "ranksep":"3", "rankdir": "LR", "newrank": "true"}
+            graph_attr={
+                "fontname": "Sans-Serif", "splines": "polyline",
+                "ranksep":"3", "rankdir": "LR", "newrank": "true",
+                "labelloc": "t", "labeljust": "l", "fontsize": "40", "label": title,
+            }
         )
 
         # add nodes
