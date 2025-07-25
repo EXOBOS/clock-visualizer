@@ -10,6 +10,9 @@ from dataclasses import dataclass
 
 from ..graphs.yamlobjects import AddrObject
 
+class NoDefaultByteException(Exception):
+    ...
+
 @total_ordering
 @dataclass(frozen=True)
 class Segment:
@@ -31,7 +34,7 @@ class Segment:
 
 
 class SparseMemory:
-    def __init__(self, default_byte: int = 0x00) -> None:
+    def __init__(self, default_byte: int | None = 0x00) -> None:
         self._default_byte = default_byte
 
         self._segments: dict[Segment, bytearray] = {}
@@ -70,6 +73,8 @@ class SparseMemory:
             for seg in self._segments.keys():
                 if key in seg:
                     return self._segments[seg][key - seg.start]
+            if self._default_byte is None:
+                raise NoDefaultByteException(f"Trying to access bytes that are not in the segments. Disabled due to default_byte = None")
             return self._default_byte
         elif isinstance(key, slice):
             if not (key.step == 1 or key.step is None):
@@ -77,21 +82,33 @@ class SparseMemory:
             if key.stop is None or key.start is None:
                 raise KeyError("Open slices are not supported")
 
-            data = bytearray([self._default_byte]) * (key.stop - key.start)
+            filler_byte = 0x00 if self._default_byte is None else self._default_byte
+            data = bytearray([filler_byte]) * (key.stop - key.start)
+            filter = bytearray([0] * (key.stop - key.start))
 
             for seg in self._segments.keys():
                 if seg.start <= key.start and key.stop <= seg.stop:
                     # -0[00]0-
                     data = self._segments[seg][key.start - seg.start:key.stop - seg.start]
+                    filter = bytearray([0x11] * (key.stop - key.start))
                 elif key.start <= seg.start and seg.stop <= key.stop:
                     # [-0000-]
                     data[seg.start - key.start:seg.stop - key.start] = self._segments[seg]
+                    filter[seg.start - key.start:seg.stop - key.start] = [0x11] * (seg.stop - seg.start)
                 elif key.start <= seg.start and seg.start <= key.stop:
                     # [-00]00-
                     data[seg.start - key.start:] = self._segments[seg][:key.stop - seg.start]
+                    filter[seg.start - key.start:] = [0x11] * (key.stop - seg.start)
                 elif key.start <= seg.stop and seg.stop <= key.stop:
                     # -00[00-]
                     data[:seg.stop - key.start] = self._segments[seg][key.start - seg.start:]
+                    filter[:seg.stop - key.start] = [0x11] * (len(self._segments[seg]) - (key.start - seg.start))
+
+                assert len(data) == len(filter)
+
+            if self._default_byte is None:
+                if 0x00 in filter:
+                    raise NoDefaultByteException(f"Trying to access bytes that are not in the segments. Disabled due to default_byte = None")
 
             return data
         else:
@@ -176,20 +193,26 @@ class SparseMemory:
 
             cur_addr = start_address + len(data)
             assert key.start >= cur_addr, f"There seem to be overlapping segments"
-            data += bytes([self._default_byte]) * (key.start - cur_addr)  # filling offset
+
+            if self._default_byte is None:
+                if key.start - cur_addr > 0:
+                    raise NoDefaultByteException(f"Trying to access bytes that are not in the segments. Disabled due to default_byte = None")
+            else:
+                data += bytes([self._default_byte]) * (key.start - cur_addr)  # filling offset
+
             assert len(v := self._segments[key]) == key.length, f"data len({v}) seems to be different than what is defined in key {key}"
             data += self._segments[key]  # add our data
 
         return data
 
     @classmethod
-    def from_intelhex(cls, indata: IO[str]) -> "SparseMemory":
+    def from_intelhex(cls, indata: IO[str], *, filler_byte: int | None = 0x00) -> "SparseMemory":
         """
         Create parse memory from Intel Hex format
         """
         record_n, record = 0, ""
         data = indata.read()
-        memory = SparseMemory()
+        memory = SparseMemory(filler_byte)
 
         try:
             base_address = 0
