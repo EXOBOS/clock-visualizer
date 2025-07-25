@@ -15,6 +15,10 @@ of the systems clock circuit using graphing engines like [graphviz][graphviz].
 > For all currently supported socs take a look in [the socs](./socs/)
 > subdirectory. To implement a new SOCs, take a look below.
 
+![Example output of the script](./res/example.png)
+
+Also take a look at [the full example clock graph](./res/example.pdf).
+
 ## Usage
 
 Currently, only intel hex memory dumps are supported.
