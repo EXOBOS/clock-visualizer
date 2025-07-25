@@ -4,6 +4,8 @@ Copyright: 2025 Auxsys
 Using the tree and a respective highlighting node, this will
 graph the tree using graphviz.
 """
+from pathlib import Path
+import tempfile
 import graphviz
 
 from .filters import FilterAccumulator, MemPropertyRegisters, MemPropertyIsEnabled, MemPropertyMux
@@ -14,8 +16,20 @@ class Grapher():
         self.clocks = clocks
         self.filters = filters
 
-        print(self.graph.source)
         self.build_raw_graph(title)
+
+    def render(self, filename: Path | str):
+        filename = Path(filename).expanduser()
+
+        match filename.suffix.lower():
+            case ".dot":
+                filename.write_text(self.graph.source)
+            case _:
+                with tempfile.TemporaryDirectory() as td:
+                    self.graph.render(
+                        filename=Path(td) / "tmp.gv",
+                        directory=Path(td),
+                        outfile=filename)
 
     def add_edge(self, graph: graphviz.Digraph, clk_from: ClockType, clk_to: ClockType):
         if self.filters.lookup_edge(clk_from, clk_to) is None:
