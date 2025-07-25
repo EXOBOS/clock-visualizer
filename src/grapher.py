@@ -94,11 +94,9 @@ class Grapher():
 
         struct += '</table>'
 
-        #struct_desc = f"{{{{{ '|'.join(_inputs) }}}|<out> out}}"
-
         g = graphviz.Digraph(
                 name=f"cluster_{clk.name}",
-                graph_attr={"labelloc": "b", "color": "none", "label": self.build_label(clk)}
+                graph_attr={"labelloc": "b", "color": "none", "label": self.build_label(clk), "fontsize": "14"}
         )
         g.node(clk.name, f"<{struct}>", color=str(self.filters.lookup_clock(clk)), shape="none")
         graph.subgraph(g)
