@@ -13,6 +13,16 @@ from ..graphs.yamlobjects import AddrObject
 class NoDefaultByteException(Exception):
     ...
 
+class ParsingError(Exception):
+    def __init__(self, record_number: int, record: str, *args: object) -> None:
+        super().__init__(*args)
+        self.record_number = record_number
+        self.record = record
+
+    def __str__(self) -> str:
+        return f"Could not process record {self.record_number} / `{self.record}`" + super().__str__()
+    ...
+
 @total_ordering
 @dataclass(frozen=True)
 class Segment:
@@ -250,4 +260,4 @@ class SparseMemory:
 
             return memory
         except Exception as e:
-            raise ValueError(f"Couldn't process record {record_n} / `{record}`", e)
+            raise ParsingError(record_n, record, e)
