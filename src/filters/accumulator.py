@@ -9,15 +9,15 @@ from .abstractfilter import AbstractFilter, Property, State
 from ..utils import Color
 
 class FilterAccumulator:
-    _color_dict = {
-        State.HIDE: Color.from_hex("#0003"),
-        State.SHOW: Color.from_hex("#a00"),
-        State.UNKNOWN: Color.from_hex("#00F"),
-        State.SPECIAL: Color.from_hex("#F00")
-    }
-
-    def __init__(self) -> None:
+    def __init__(self, *, show_hidden: bool = True) -> None:
         self._filters: list[AbstractFilter] = []
+
+        self._color_dict = {
+            State.HIDE: Color.from_hex("#0003") if show_hidden else None,
+            State.SHOW: Color.from_hex("#a00"),
+            State.UNKNOWN: Color.from_hex("#00F"),
+            State.SPECIAL: Color.from_hex("#F00")
+        }
 
     def add_filter(self, filter: AbstractFilter):
         self._filters.append(filter)
